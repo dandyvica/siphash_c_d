@@ -36,8 +36,7 @@ pub struct SipHash<const C: u8, const D: u8, T> {
 impl<const C: u8, const D: u8> SipHash<C, D, Hash64> {
     /// Calculate the `siphash_c_d` 64-bit value of the message `msg` using the key `key`.
     ///
-    /// # Panics
-    /// Panics if the length of the key is less than 16 bytes.
+    /// If the length of the key is less than 16 bytes, returns an error (`SipError::KeyTooShort`).
     #[allow(clippy::new_ret_no_self)]
     pub fn new<T>(key: T, msg: &[u8]) -> Result<u64, SipError>
     where
@@ -54,8 +53,7 @@ impl<const C: u8, const D: u8> SipHash<C, D, Hash64> {
 impl<const C: u8, const D: u8> SipHash<C, D, Hash128> {
     /// Calculate the `siphash_c_d` 128-bit value of the message `msg` using the key `key`.
     ///
-    /// # Panics
-    /// Panics if the length of the key is less than 16 bytes.
+    /// If the length of the key is less than 16 bytes, returns an error (`SipError::KeyTooShort`).
     #[allow(clippy::new_ret_no_self)]
     pub fn new<T>(key: T, msg: &[u8]) -> Result<u128, SipError>
     where
@@ -113,7 +111,7 @@ impl<const C: u8, const D: u8, T> SipHash<C, D, T> {
     }
 
     // this is described in §2.1
-    fn initialization(k0: u64, k1: u64) -> Self {
+    const fn initialization(k0: u64, k1: u64) -> Self {
         let v = [
             k0 ^ 0x736f6d6570736575_u64,
             k1 ^ 0x646f72616e646f6d_u64,
