@@ -1,10 +1,11 @@
+// A custom iterator to iterator through message blocks fomr 0 to w-1 (paper notation)
+// It handles the last message block and returns a u64 value for each item
 use std::{iter::Iterator, slice::ChunksExact};
 
 pub(crate) struct MessageChunk<'a>(pub(crate) &'a [u8]);
 
 #[derive(Debug)]
 pub(crate) struct IterHelper<'a> {
-    //i: usize,
     last: bool,
     length: usize,
     iter: ChunksExact<'a, u8>,
@@ -17,7 +18,6 @@ impl<'a> IntoIterator for &'a MessageChunk<'a> {
     // note that into_iter() is consuming self
     fn into_iter(self) -> Self::IntoIter {
         IterHelper {
-            //i: 0,
             last: false,
             length: self.0.len(),
             iter: self.0.chunks_exact(8),
@@ -33,8 +33,6 @@ impl<'a> Iterator for IterHelper<'a> {
         if self.last {
             None
         } else if let Some(m_i) = self.iter.next() {
-            // self.i += 1;
-            // println!("========> m_i={:0x?}", m_i);
             Some(slice_to_u64(m_i))
         } else {
             let mut last_m = [0u8; 8];
@@ -44,11 +42,7 @@ impl<'a> Iterator for IterHelper<'a> {
                 last_m[b.0] = *b.1;
             }
 
-            //println!("========> last_m={:0x?}", last_m);
-
             self.last = true;
-            //self.i += 1;
-
             Some(slice_to_u64(&last_m))
         }
     }
@@ -58,9 +52,6 @@ impl<'a> Iterator for IterHelper<'a> {
 #[inline]
 pub(crate) fn slice_to_u64(s: &[u8]) -> u64 {
     debug_assert!(s.len() == 8);
-
-    // let mut arr: [u8; 8] = [0; 8];
-    // arr.copy_from_slice(s);
     u64::from_le_bytes(s.try_into().unwrap())
 }
 
@@ -98,15 +89,12 @@ mod tests {
         let mut iter = chunks.into_iter();
 
         let m1 = iter.next().unwrap();
-        println!("{:?}", iter);
         assert_eq!(m1, 0x0706050403020100);
 
         let m2 = iter.next().unwrap();
-        println!("{:?}", iter);
         assert_eq!(m2, 0x0f0e0d0c0b0a0908);
 
         let m3 = iter.next().unwrap();
-        println!("{:?}", iter);
         assert_eq!(m3, 0x1000000000000000);
 
         assert!(iter.next().is_none());
@@ -123,8 +111,21 @@ mod tests {
         let mut iter = chunks.into_iter();
 
         let m1 = iter.next().unwrap();
-        println!("{:?}", iter);
         assert_eq!(m1, 0x01000000000000AF);
+
+        assert!(iter.next().is_none());
+    }
+
+    #[test]
+    fn test_empty_msg() {
+        let msg = Vec::new();
+
+        // first block
+        let chunks = MessageChunk(&msg);
+        let mut iter = chunks.into_iter();
+
+        let m1 = iter.next().unwrap();
+        assert_eq!(m1, 0);
 
         assert!(iter.next().is_none());
     }
