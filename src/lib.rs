@@ -1,4 +1,4 @@
-//! This crate provides a pure Rust implemntation of the `siphash_c_d` algorithm as originally described in:
+//! This crate provides a pure `no_std` Rust implementation of the `siphash_c_d` algorithm as originally described in:
 //! <https://cr.yp.to/siphash/siphash-20120918.pdf>.
 //!
 //! The paper only describes the algorithm for an output value of 64 bits. The algorithm for a 128-bit output
@@ -13,6 +13,7 @@
 //! * [`SipHash24`] for `siphash_2_4` (64-bit hash value)
 //! * [`SipHash48`] for `siphash_4_8` (64-bit hash value)
 //!
+//! It has been tested on a bigendian platform using qemu on an emulated MIPS Malta platform.
 //!
 //! # Usage
 //!
@@ -43,20 +44,6 @@
 //! let k1 = 0x0f0e0d0c0b0a0908_u64;
 //! let hash = SipHash24::new((k0, k1), &msg).unwrap();
 //!
-//! assert_eq!(hash, 0xa129ca6149be45e5);
-//! ```
-//!
-//! # Examples
-//! ## The key is made of a vector of `u8` integers
-//!
-//! ```rust
-//! use siphash_c_d::SipHash24;
-//!
-//! // message to be hashed
-//! let key: Vec<_> = (0..=15_u8).collect();
-//! let msg: Vec<_> = (0..=14_u8).collect();
-//!
-//! let hash = SipHash24::new(&key, &msg).unwrap();
 //! assert_eq!(hash, 0xa129ca6149be45e5);
 //! ```
 //!
@@ -110,9 +97,8 @@
 //! let higher_hash = SipHash::<32, 64, Hash128>::new(key, &msg).unwrap();
 //! ```
 //!
-//! # Todo
-//! Test on a bigendian platform.
 
+#![no_std]
 mod iter;
 mod siphash;
 mod siphashkey;

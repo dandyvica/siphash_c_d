@@ -1,6 +1,6 @@
 // A custom iterator to iterator through message blocks fomr 0 to w-1 (paper notation)
 // It handles the last message block and returns a u64 value for each item
-use std::{iter::Iterator, slice::ChunksExact};
+use core::{iter::Iterator, slice::ChunksExact};
 
 pub(crate) struct MessageChunk<'a>(pub(crate) &'a [u8]);
 
@@ -62,7 +62,7 @@ mod tests {
     #[test]
     // taken from Appendix A: 2 chunks
     fn test_iterator_1() {
-        let msg: Vec<_> = (0..=14).collect();
+        let msg: &[u8] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
         assert_eq!(msg.len(), 15);
 
         // first block
@@ -81,7 +81,7 @@ mod tests {
     #[test]
     // 3 chunks
     fn test_iterator_2() {
-        let msg: Vec<_> = (0..=15).collect();
+        let msg: &[u8] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
         assert_eq!(msg.len(), 16);
 
         // first block
@@ -103,7 +103,7 @@ mod tests {
     #[test]
     // 1 chunk (example given page 4)
     fn test_iterator_3() {
-        let msg = vec![0xAF];
+        let msg: &[u8] = &[0xAF];
         assert_eq!(msg.len(), 1);
 
         // first block
@@ -118,7 +118,7 @@ mod tests {
 
     #[test]
     fn test_empty_msg() {
-        let msg = Vec::new();
+        let msg: &[u8] = &[];
 
         // first block
         let chunks = MessageChunk(&msg);

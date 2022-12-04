@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use core::convert::TryFrom;
 
 use crate::{iter::slice_to_u64, SipError};
 
@@ -41,13 +41,13 @@ impl TryFrom<&[u8; 16]> for SipHashKey {
     }
 }
 
-impl TryFrom<&Vec<u8>> for SipHashKey {
-    type Error = SipError;
+// impl TryFrom<&Vec<u8>> for SipHashKey {
+//     type Error = SipError;
 
-    fn try_from(key: &Vec<u8>) -> Result<Self, Self::Error> {
-        SipHashKey::try_from(key.as_slice())
-    }
-}
+//     fn try_from(key: &Vec<u8>) -> Result<Self, Self::Error> {
+//         SipHashKey::try_from(key.as_slice())
+//     }
+// }
 
 impl TryFrom<(u64, u64)> for SipHashKey {
     type Error = SipError;
@@ -69,15 +69,15 @@ mod tests {
         assert_eq!(s.1, 0x0f0e0d0c0b0a0908);
     }
 
-    #[test]
-    // taken from Appendix A
-    fn test_from_vec() {
-        let key: Vec<_> = (0..=15_u8).collect();
+    // #[test]
+    // // taken from Appendix A
+    // fn test_from_vec() {
+    //     let key: Vec<_> = (0..=15_u8).collect();
 
-        let s = SipHashKey::try_from(&key).unwrap();
-        assert_eq!(s.0, 0x0706050403020100);
-        assert_eq!(s.1, 0x0f0e0d0c0b0a0908);
-    }
+    //     let s = SipHashKey::try_from(&key).unwrap();
+    //     assert_eq!(s.0, 0x0706050403020100);
+    //     assert_eq!(s.1, 0x0f0e0d0c0b0a0908);
+    // }
 
     #[test]
     // taken from Appendix A
@@ -99,22 +99,22 @@ mod tests {
         assert!(matches!(err, SipError::KeyTooShort(x) if x == 3));
     }
 
-    #[test]
-    // taken from Appendix A
-    fn test_from_wrong_vec() {
-        // key is not 16 bytes => Err
-        let key = vec![0_u8, 1, 2];
-        let s = SipHashKey::try_from(&key);
-        assert!(s.is_err());
-        let err = s.unwrap_err();
-        assert!(matches!(err, SipError::KeyTooShort(x) if x == 3));
-    }
+    // #[test]
+    // // taken from Appendix A
+    // fn test_from_wrong_vec() {
+    //     // key is not 16 bytes => Err
+    //     let key = vec![0_u8, 1, 2];
+    //     let s = SipHashKey::try_from(&key);
+    //     assert!(s.is_err());
+    //     let err = s.unwrap_err();
+    //     assert!(matches!(err, SipError::KeyTooShort(x) if x == 3));
+    // }
 
     #[test]
     // taken from Appendix A
     fn test_from_array() {
-        let v: Vec<_> = (0..=15_u8).collect();
-        let key: [u8; 16] = v.try_into().unwrap();
+        //let v: Vec<_> = (0..=15_u8).collect();
+        let key: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
         let s = SipHashKey::try_from(&key).unwrap();
         assert_eq!(s.0, 0x0706050403020100);

@@ -1,4 +1,4 @@
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 use crate::{iter::MessageChunk, siphashkey::SipHashKey, SipError};
 
@@ -176,7 +176,7 @@ mod tests {
     #[test]
     // taken from Appendix A
     fn test_using_tuple() {
-        let msg: Vec<_> = (0..=14_u8).collect();
+        let msg: &[u8] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
         assert_eq!(msg.len(), 15);
 
         let siphash_2_4 = SipHash24::new((0x0706050403020100, 0x0f0e0d0c0b0a0908), &msg).unwrap();
@@ -186,11 +186,11 @@ mod tests {
     #[test]
     // taken from Appendix A
     fn test_using_vec() {
-        let key: Vec<_> = (0..=15_u8).collect();
-        let msg: Vec<_> = (0..=14_u8).collect();
+        let key: &[u8] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+        let msg: &[u8] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
         assert_eq!(msg.len(), 15);
 
-        let siphash_2_4 = SipHash24::new(&key, &msg).unwrap();
+        let siphash_2_4 = SipHash24::new(key, &msg).unwrap();
         assert_eq!(siphash_2_4, 0xa129ca6149be45e5);
     }
 
@@ -198,7 +198,7 @@ mod tests {
     // taken from Appendix A
     fn test_using_u128() {
         let key: u128 = 0x0706050403020100_0f0e0d0c0b0a0908;
-        let msg: Vec<_> = (0..=14_u8).collect();
+        let msg: &[u8] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
         assert_eq!(msg.len(), 15);
 
         let siphash_2_4 = SipHash24::new(key, &msg).unwrap();
@@ -219,7 +219,7 @@ mod tests {
     #[test]
     // taken from https://github.com/google/guava/blob/master/guava-tests/test/com/google/common/hash/SipHashFunctionTest.java
     fn test_sample2() {
-        let key: Vec<_> = (0..=15).collect();
+        let key: &[u8] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
         const EXPECTED: [u64; 64] = [
             0x726fdb47dd0e0e31,
@@ -288,16 +288,19 @@ mod tests {
             0x958a324ceb064572,
         ];
 
+        // no Vec in no_std
+        let mut msg = [0u8;64];
+
         for i in 0..EXPECTED.len() {
-            let msg: Vec<u8> = (0..i as u8).collect();
-            assert_eq!(SipHash24::new(&key, &msg).unwrap(), EXPECTED[i]);
+            (0..i).for_each(|k| msg[k] = k as u8);
+            assert_eq!(SipHash24::new(key, &msg[0..i]).unwrap(), EXPECTED[i]);
         }
     }
 
     // tests taken from https://github.com/veorq/SipHash
     #[test]
     fn test_siphash128() {
-        let key: Vec<_> = (0..=15).collect();
+        let key: &[u8] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
         const EXPECTED: [[u8; 16]; 64] = [
             [
@@ -558,9 +561,12 @@ mod tests {
             ],
         ];
 
+        // no Vec in no_std
+        let mut msg = [0u8;64];
+
         for i in 0..EXPECTED.len() {
-            let msg: Vec<u8> = (0..i as u8).collect();
-            let h = SipHash::<2, 4, Hash128>::new(&key, &msg).unwrap();
+            (0..i).for_each(|k| msg[k] = k as u8);
+            let h = SipHash::<2, 4, Hash128>::new(key, &msg[0..i]).unwrap();
 
             assert_eq!(h.to_le_bytes(), EXPECTED[i]);
         }
