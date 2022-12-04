@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{iter::MessageChunk, siphashkey::SipHashKey};
+use crate::{iter::MessageChunk, siphashkey::SipHashKey, SipError};
 
 /// Defines a 64-bit hash calculation.
 pub struct Hash64;
@@ -23,7 +23,7 @@ macro_rules! oper {
     };
 }
 
-#[derive(Debug, Default)]
+//#[derive(Debug, Default)]
 /// The generic `siphash_c_d` structure which is keeping the internal state of the algorithm.
 pub struct SipHash<const C: u8, const D: u8, T> {
     // internal state
@@ -39,12 +39,15 @@ impl<const C: u8, const D: u8> SipHash<C, D, Hash64> {
     /// # Panics
     /// Panics if the length of the key is less than 16 bytes.
     #[allow(clippy::new_ret_no_self)]
-    pub fn new<T: Into<SipHashKey>>(key: T, msg: &[u8]) -> u64 {
-        let k = key.into();
+    pub fn new<T>(key: T, msg: &[u8]) -> Result<u64, SipError>
+    where
+        T: TryInto<SipHashKey, Error = SipError>,
+    {
+        let k = key.try_into()?;
 
         let mut siphash = SipHash::<C, D, Hash64>::initialization(k.0, k.1);
         siphash.compression(msg);
-        siphash.finalization(0xFF)
+        Ok(siphash.finalization(0xFF))
     }
 }
 
@@ -54,8 +57,11 @@ impl<const C: u8, const D: u8> SipHash<C, D, Hash128> {
     /// # Panics
     /// Panics if the length of the key is less than 16 bytes.
     #[allow(clippy::new_ret_no_self)]
-    pub fn new<T: Into<SipHashKey>>(key: T, msg: &[u8]) -> u128 {
-        let k = key.into();
+    pub fn new<T>(key: T, msg: &[u8]) -> Result<u128, SipError>
+    where
+        T: TryInto<SipHashKey, Error = SipError>,
+    {
+        let k = key.try_into()?;
 
         let mut siphash = SipHash::<C, D, Hash128>::initialization(k.0, k.1);
 
@@ -69,7 +75,7 @@ impl<const C: u8, const D: u8> SipHash<C, D, Hash128> {
         // additional step for 128
         let u1 = siphash.additional_step() as u128;
 
-        u1 << 64_u128 | u0
+        Ok(u1 << 64_u128 | u0)
     }
 
     // this is the additional step for the 128-bit SipHash algorithm
@@ -173,7 +179,7 @@ mod tests {
         let msg: Vec<_> = (0..=14_u8).collect();
         assert_eq!(msg.len(), 15);
 
-        let siphash_2_4 = SipHash24::new((0x0706050403020100, 0x0f0e0d0c0b0a0908), &msg);
+        let siphash_2_4 = SipHash24::new((0x0706050403020100, 0x0f0e0d0c0b0a0908), &msg).unwrap();
         assert_eq!(siphash_2_4, 0xa129ca6149be45e5);
     }
 
@@ -184,7 +190,7 @@ mod tests {
         let msg: Vec<_> = (0..=14_u8).collect();
         assert_eq!(msg.len(), 15);
 
-        let siphash_2_4 = SipHash24::new(&key, &msg);
+        let siphash_2_4 = SipHash24::new(&key, &msg).unwrap();
         assert_eq!(siphash_2_4, 0xa129ca6149be45e5);
     }
 
@@ -195,7 +201,7 @@ mod tests {
         let msg: Vec<_> = (0..=14_u8).collect();
         assert_eq!(msg.len(), 15);
 
-        let siphash_2_4 = SipHash24::new(key, &msg);
+        let siphash_2_4 = SipHash24::new(key, &msg).unwrap();
         assert_eq!(siphash_2_4, 0xa129ca6149be45e5);
     }
 
@@ -206,7 +212,7 @@ mod tests {
         let msg = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E".as_bytes();
         assert_eq!(msg.len(), 15);
 
-        let siphash_2_4 = SipHash24::new(key, msg);
+        let siphash_2_4 = SipHash24::new(key, msg).unwrap();
         assert_eq!(siphash_2_4, 0xa129ca6149be45e5);
     }
 
@@ -284,7 +290,7 @@ mod tests {
 
         for i in 0..EXPECTED.len() {
             let msg: Vec<u8> = (0..i as u8).collect();
-            assert_eq!(SipHash24::new(&key, &msg), EXPECTED[i]);
+            assert_eq!(SipHash24::new(&key, &msg).unwrap(), EXPECTED[i]);
         }
     }
 
@@ -554,7 +560,7 @@ mod tests {
 
         for i in 0..EXPECTED.len() {
             let msg: Vec<u8> = (0..i as u8).collect();
-            let h = SipHash::<2, 4, Hash128>::new(&key, &msg);
+            let h = SipHash::<2, 4, Hash128>::new(&key, &msg).unwrap();
 
             assert_eq!(h.to_le_bytes(), EXPECTED[i]);
         }
