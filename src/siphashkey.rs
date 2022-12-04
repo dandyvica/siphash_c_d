@@ -10,7 +10,6 @@ impl TryFrom<&[u8]> for SipHashKey {
 
     fn try_from(key: &[u8]) -> Result<Self, Self::Error> {
         if key.len() < 16 {
-            println!("============> s={}", key.len());
             Err(SipError::KeyTooShort(key.len()))
         } else {
             Ok(SipHashKey(

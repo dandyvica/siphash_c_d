@@ -115,10 +115,10 @@ impl<const C: u8, const D: u8, T> SipHash<C, D, T> {
     // this is described in §2.1
     fn initialization(k0: u64, k1: u64) -> Self {
         let v = [
-            k0 ^ u64::from_le(0x736f6d6570736575_u64),
-            k1 ^ u64::from_le(0x646f72616e646f6d_u64),
-            k0 ^ u64::from_le(0x6c7967656e657261_u64),
-            k1 ^ u64::from_le(0x7465646279746573_u64),
+            k0 ^ 0x736f6d6570736575_u64,
+            k1 ^ 0x646f72616e646f6d_u64,
+            k0 ^ 0x6c7967656e657261_u64,
+            k1 ^ 0x7465646279746573_u64,
         ];
 
         Self {
