@@ -41,7 +41,7 @@
 //!
 //! let k0 = 0x0706050403020100_u64;
 //! let k1 = 0x0f0e0d0c0b0a0908_u64;
-//! let hash = SipHash24::new((k0, k1), &msg).unwrap();
+//! let hash = SipHash24::with_key((k0, k1), &msg).unwrap();
 //!
 //! assert_eq!(hash, 0xa129ca6149be45e5);
 //! ```
@@ -55,7 +55,7 @@
 //! let key = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F".as_bytes();
 //! let msg: Vec<_> = (0..=14_u8).collect();
 //!
-//! let hash = SipHash24::new(key, &msg).unwrap();
+//! let hash = SipHash24::with_key(key, &msg).unwrap();
 //! assert_eq!(hash, 0xa129ca6149be45e5);
 //! ```
 //!
@@ -68,7 +68,7 @@
 //! let key = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15_u8];
 //! let msg: Vec<_> = (0..=14_u8).collect();
 //!
-//! let hash = SipHash24::new(&key, &msg).unwrap();
+//! let hash = SipHash24::with_key(&key, &msg).unwrap();
 //! assert_eq!(hash, 0xa129ca6149be45e5);
 //! ```
 //!
@@ -81,7 +81,7 @@
 //! let key: u128 = 0x0706050403020100_0f0e0d0c0b0a0908;
 //! let msg: Vec<_> = (0..=14_u8).collect();
 //!
-//! let hash = SipHash24::new(key, &msg).unwrap();
+//! let hash = SipHash24::with_key(key, &msg).unwrap();
 //! assert_eq!(hash, 0xa129ca6149be45e5);
 //! ```
 //!
@@ -93,21 +93,21 @@
 //! let msg = "The quick brown fox jumps over the lazy dog".as_bytes();
 //! let key = "0123456789ABCDEF0".as_bytes();
 //!
-//! let higher_hash = SipHash::<32, 64, Hash128>::new(key, &msg).unwrap();
+//! let higher_hash = SipHash::<32, 64, Hash128>::with_key(key, &msg).unwrap();
 //! ```
 //!
 //! If the key length is < 16 bytes, an error is returned:
-//! 
+//!
 //! ```rust
 //! use siphash_c_d::SipHash24;
 //!
 //! let msg = "The quick brown fox jumps over the lazy dog".as_bytes();
 //! let key = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E".as_bytes();
 //!
-//! let hash = SipHash24::new(key, &msg);
+//! let hash = SipHash24::with_key(key, &msg);
 //! assert!(hash.is_err());
 //! ```
-//! 
+//!
 
 #![no_std]
 mod iter;

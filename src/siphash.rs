@@ -37,16 +37,15 @@ impl<const C: u8, const D: u8> SipHash<C, D, Hash64> {
     /// Calculate the `siphash_c_d` 64-bit value of the message `msg` using the key `key`.
     ///
     /// If the length of the key is less than 16 bytes, returns an error (`SipError::KeyTooShort`).
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new<T>(key: T, msg: &[u8]) -> Result<u64, SipError>
+    pub fn with_key<T>(key: T, msg: &[u8]) -> Result<u64, SipError>
     where
         T: TryInto<SipHashKey, Error = SipError>,
     {
         let k = key.try_into()?;
 
-        let mut siphash = SipHash::<C, D, Hash64>::initialization(k.0, k.1);
+        let mut siphash = SipHash::<C, D, Hash64>::new(k.0, k.1);
         siphash.compression(msg);
-        Ok(siphash.finalization(0xFF))
+        Ok(siphash.finalization(2, 0xFF))
     }
 }
 
@@ -54,41 +53,44 @@ impl<const C: u8, const D: u8> SipHash<C, D, Hash128> {
     /// Calculate the `siphash_c_d` 128-bit value of the message `msg` using the key `key`.
     ///
     /// If the length of the key is less than 16 bytes, returns an error (`SipError::KeyTooShort`).
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new<T>(key: T, msg: &[u8]) -> Result<u128, SipError>
+    pub fn with_key<T>(key: T, msg: &[u8]) -> Result<u128, SipError>
     where
         T: TryInto<SipHashKey, Error = SipError>,
     {
         let k = key.try_into()?;
 
-        let mut siphash = SipHash::<C, D, Hash128>::initialization(k.0, k.1);
+        let mut siphash = SipHash::<C, D, Hash128>::new(k.0, k.1);
 
         // additional step for 128
         siphash.v[1] ^= 0xEE;
 
         siphash.compression(msg);
 
-        let u0 = siphash.finalization(0xEE) as u128;
+        let u0 = siphash.finalization(2, 0xEE) as u128;
 
         // additional step for 128
-        let u1 = siphash.additional_step() as u128;
+        let u1 = siphash.finalization(1, 0xDD) as u128;
 
         Ok(u1 << 64_u128 | u0)
-    }
-
-    // this is the additional step for the 128-bit SipHash algorithm
-    fn additional_step(&mut self) -> u64 {
-        self.v[1] ^= 0xDD;
-
-        // then does D iterations of SipRound
-        (0..D).for_each(|_| self.sip_round());
-
-        // returns the 64-bit value
-        self.v[0] ^ self.v[1] ^ self.v[2] ^ self.v[3]
     }
 }
 
 impl<const C: u8, const D: u8, T> SipHash<C, D, T> {
+    // this is described in §2.1
+    pub fn new(k0: u64, k1: u64) -> Self {
+        let v = [
+            k0 ^ 0x736f6d6570736575_u64,
+            k1 ^ 0x646f72616e646f6d_u64,
+            k0 ^ 0x6c7967656e657261_u64,
+            k1 ^ 0x7465646279746573_u64,
+        ];
+
+        Self {
+            v,
+            output: PhantomData,
+        }
+    }
+
     // core function of the algorithm
     fn sip_round(&mut self) {
         oper!(add, self.v, 0, 1);
@@ -110,23 +112,9 @@ impl<const C: u8, const D: u8, T> SipHash<C, D, T> {
         oper!(shiftl, self.v, 2, 32);
     }
 
-    // this is described in §2.1
-    const fn initialization(k0: u64, k1: u64) -> Self {
-        let v = [
-            k0 ^ 0x736f6d6570736575_u64,
-            k1 ^ 0x646f72616e646f6d_u64,
-            k0 ^ 0x6c7967656e657261_u64,
-            k1 ^ 0x7465646279746573_u64,
-        ];
-
-        Self {
-            v,
-            output: PhantomData,
-        }
-    }
-
     // compression algorithm for a message m_i
     fn compress_chunk(&mut self, m_i: u64) {
+        // The mi’s are iteratively processed by doing
         self.v[3] ^= m_i;
 
         // then C iteration of SipRound
@@ -148,10 +136,12 @@ impl<const C: u8, const D: u8, T> SipHash<C, D, T> {
     }
 
     // finalization step
-    fn finalization(&mut self, u: u64) -> u64 {
+    fn finalization(&mut self, i: usize, u: u64) -> u64 {
         // After all the message words have been processed, SipHash-c-d xors the constant u to the state
-        // u = 0xFF pour SipHash64, = 0xEE pour SipHash128
-        self.v[2] ^= u;
+        //i is the index for which the constant u is xored
+        // i = 2, u = 0xFF pour SipHash64
+        // i = 1, u = 0xEE pour SipHash128
+        self.v[i] ^= u;
 
         // then does D iterations of SipRound
         (0..D).for_each(|_| self.sip_round());
@@ -177,7 +167,8 @@ mod tests {
         let msg: &[u8] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
         assert_eq!(msg.len(), 15);
 
-        let siphash_2_4 = SipHash24::new((0x0706050403020100, 0x0f0e0d0c0b0a0908), &msg).unwrap();
+        let siphash_2_4 =
+            SipHash24::with_key((0x0706050403020100, 0x0f0e0d0c0b0a0908), &msg).unwrap();
         assert_eq!(siphash_2_4, 0xa129ca6149be45e5);
     }
 
@@ -188,7 +179,7 @@ mod tests {
         let msg: &[u8] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
         assert_eq!(msg.len(), 15);
 
-        let siphash_2_4 = SipHash24::new(key, &msg).unwrap();
+        let siphash_2_4 = SipHash24::with_key(key, &msg).unwrap();
         assert_eq!(siphash_2_4, 0xa129ca6149be45e5);
     }
 
@@ -199,7 +190,7 @@ mod tests {
         let msg: &[u8] = &[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
         assert_eq!(msg.len(), 15);
 
-        let siphash_2_4 = SipHash24::new(key, &msg).unwrap();
+        let siphash_2_4 = SipHash24::with_key(key, &msg).unwrap();
         assert_eq!(siphash_2_4, 0xa129ca6149be45e5);
     }
 
@@ -210,7 +201,7 @@ mod tests {
         let msg = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E".as_bytes();
         assert_eq!(msg.len(), 15);
 
-        let siphash_2_4 = SipHash24::new(key, msg).unwrap();
+        let siphash_2_4 = SipHash24::with_key(key, msg).unwrap();
         assert_eq!(siphash_2_4, 0xa129ca6149be45e5);
     }
 
@@ -287,11 +278,11 @@ mod tests {
         ];
 
         // no Vec in no_std
-        let mut msg = [0u8;64];
+        let mut msg = [0u8; 64];
 
         for i in 0..EXPECTED.len() {
             (0..i).for_each(|k| msg[k] = k as u8);
-            assert_eq!(SipHash24::new(key, &msg[0..i]).unwrap(), EXPECTED[i]);
+            assert_eq!(SipHash24::with_key(key, &msg[0..i]).unwrap(), EXPECTED[i]);
         }
     }
 
@@ -560,11 +551,11 @@ mod tests {
         ];
 
         // no Vec in no_std
-        let mut msg = [0u8;64];
+        let mut msg = [0u8; 64];
 
         for i in 0..EXPECTED.len() {
             (0..i).for_each(|k| msg[k] = k as u8);
-            let h = SipHash::<2, 4, Hash128>::new(key, &msg[0..i]).unwrap();
+            let h = SipHash::<2, 4, Hash128>::with_key(key, &msg[0..i]).unwrap();
 
             assert_eq!(h.to_le_bytes(), EXPECTED[i]);
         }
