@@ -1,4 +1,4 @@
-//! This crate provides a pure `no_std` Rust implementation of the `siphash_c_d` algorithm as originally described in:
+//! This crate provides a pure `no_std` Rust implementation (no `unsafe`) of the `siphash_c_d` algorithm as originally described in:
 //! <https://cr.yp.to/siphash/siphash-20120918.pdf>.
 //!
 //! The paper only describes the algorithm for an output value of 64 bits. The algorithm for a 128-bit output
@@ -14,6 +14,8 @@
 //! * [`SipHash48`] for `siphash_4_8` (64-bit hash value)
 //!
 //! It has been tested on a bigendian platform using qemu on an emulated MIPS Malta platform.
+//!
+//! It also implements the `Hasher` trait.
 //!
 //! # Usage
 //!
@@ -52,7 +54,7 @@
 //! use siphash_c_d::SipHash24;
 //!
 //! // message to be hashed
-//! let key = "\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F".as_bytes();
+//! let key = b"\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0A\x0B\x0C\x0D\x0E\x0F";
 //! let msg: Vec<_> = (0..=14_u8).collect();
 //!
 //! let hash = SipHash24::with_key(key, &msg).unwrap();
@@ -85,6 +87,21 @@
 //! assert_eq!(hash, 0xa129ca6149be45e5);
 //! ```
 //!
+//! # Using the `Hasher` trait
+//!
+//! ```rust
+//! use core::hash::Hasher;
+//! use siphash_c_d::SipHash24;
+//!
+//! let mut siphash_2_4 = SipHash24::new((0x0706050403020100, 0x0f0e0d0c0b0a0908)).unwrap();
+//!
+//! siphash_2_4.write(&[0, 1, 2, 3, 4, 5, 6, 7]);
+//! assert_eq!(siphash_2_4.finish(), 0xdd7a02a58bb1f0ab);
+//! ```
+//!
+//!         
+
+//!
 //! If you feel adventurous, you can try higher values of `c` and `d`:
 //!
 //! ```rust
@@ -110,9 +127,12 @@
 //!
 
 #![no_std]
+mod hasher;
 mod iter;
+mod residue;
 mod siphash;
 mod siphashkey;
+mod state;
 
 pub use crate::siphash::SipHash;
 pub use crate::siphash::SipHash24;
