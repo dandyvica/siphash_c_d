@@ -15,7 +15,7 @@ The algorithm is made generic for the *c* and *d* `u8`integers. For the most com
 
 It has been tested on a *bigendian* platform using qemu on an emulated MIPS Malta platform.
 
-[![Build status](https://github.com/dandyvica/siphash_c_d/actions/workflows/ci/badge.svg)](https://github.com/dandyvica/siphash_c_d/actions)
+[![Rust](https://github.com/dandyvica/siphash_c_d/actions/workflows/rust.yml/badge.svg)](https://github.com/dandyvica/siphash_c_d/actions/workflows/rust.yml)
 
 # Usage
 
