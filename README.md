@@ -13,7 +13,7 @@ The algorithm is made generic for the *c* and *d* `u8`integers. For the most com
 * `SipHash24` for `siphash_2_4` (64-bit hash value)
 * `SipHash48` for `siphash_4_8` (64-bit hash value)
 
-It has been tested on a bigendian platform using qemu on an emulated MIPS Malta platform.
+It has been tested on a *bigendian* platform using qemu on an emulated MIPS Malta platform.
 
 # Usage
 

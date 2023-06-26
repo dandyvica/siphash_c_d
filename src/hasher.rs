@@ -9,7 +9,7 @@ use crate::{
 impl<const C: u8, const D: u8> Hasher for SipHash<C, D, Hash64> {
     fn write(&mut self, bytes: &[u8]) {
         //as this fn could be called recursively, this is a safeguard
-        if bytes.len() == 0 {
+        if bytes.is_empty() {
             return;
         }
 
@@ -29,7 +29,7 @@ impl<const C: u8, const D: u8> Hasher for SipHash<C, D, Hash64> {
 
             // now read exact 8 bytes
             let mut iter_chunk = bytes[added..].chunks_exact(8);
-            while let Some(block_i) = iter_chunk.next() {
+            for block_i in iter_chunk.by_ref() {
                 // convert block to little endian u64
                 let m_i = slice_to_u64(block_i);
                 self.state.compress_chunk(m_i);
