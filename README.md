@@ -1,10 +1,10 @@
-This crate provides a pure `no_std` Rust implementation of the `siphash_c_d` algorithm as originally described in:
+This crate provides a pure `no_std` and `safe` Rust implementation of the `siphash_c_d` algorithm as originally described in:
 <https://cr.yp.to/siphash/siphash-20120918.pdf>.
 
 The paper only describes the algorithm for an output value of 64 bits. The algorithm for a 128-bit output
 value is very similar but only described in: <https://github.com/veorq/SipHash>
 
-SipHash was invented by Jean-Philippe Aumasson and Daniel J. Bernstein.
+*SipHash* was invented by Jean-Philippe Aumasson and Daniel J. Bernstein.
 
 Using the `Hash64` or `Hash128` keyword, you can get the `u64` or `u128` bits hash value.
 
@@ -14,6 +14,8 @@ The algorithm is made generic for the *c* and *d* `u8`integers. For the most com
 * `SipHash48` for `siphash_4_8` (64-bit hash value)
 
 It has been tested on a *bigendian* platform using qemu on an emulated MIPS Malta platform.
+
+[![Build status](https://github.com/dandyvica/siphash_c_d/actions/workflows/ci/badge.svg)](https://github.com/dandyvica/siphash_c_d/actions)
 
 # Usage
 
